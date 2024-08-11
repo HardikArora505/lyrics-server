@@ -1,15 +1,17 @@
-const express = require("express")
-const cors = require("cors")
-const axios = require("axios")
-const Genius = require("genius-lyrics");
+import express, { Router } from "express";
+import serverless from "serverless-http";
+import * as Genius from "genius-lyrics"
+import cors from "cors"
 const Client = new Genius.Client("NxEOYDpXCf2w0duofLbAsuJxv_iUSPv-f6whgwiCpyF8Qs47jApxpBxMJYCPfjLi");
-const app = express()
-let port = process.env.PORT || 3001;
+
+const app = express();
 app.use(cors())
 app.use(express.json())
 
+const router = Router();
+router.get("/hello", (req, res) => res.send("Hello World!"));
 
-app.get("/lyrics/:id", async (req, res) => {
+router.get("/lyrics/:id", async (req, res) => {
     // console.log(req.body.artists.map(e => e.name))
     try {
         const lyrics = await getLyrics(req.params.id)
@@ -26,7 +28,7 @@ app.get("/lyrics/:id", async (req, res) => {
     }
 })
 
-app.post("/get-songs-list", async (req, res) => {
+router.post("/get-songs-list", async (req, res) => {
     try {
         const songs = await getSongList(req.body.artist, req.body.track)
         res.send(songs.map((e) => e._raw))
@@ -36,11 +38,6 @@ app.post("/get-songs-list", async (req, res) => {
         res.json({ songs: "error fetching songs list" })
     }
 })
-
-// app.listen(3000)
-app.listen(port, () => {
-    console.log(`http://localhost:${port}/lyrics`)
-});
 
 async function getLyrics(id=-1) {
     try {
@@ -67,5 +64,8 @@ const getSongList = async (artist = "", song) => {
     }
 
 }
+app.use("/api/", router);
+
+export const handler = serverless(app);
 
 
