@@ -39,19 +39,67 @@ router.post("/get-songs-list", async (req, res) => {
     }
 })
 
-async function getLyrics(id=-1) {
+router.post("/lyrics", async (req, res) => {
+    console.log(req.body.artists.map(e => e.name))
+    try {
+        const lyrics = await getLyricsForLynxApp(req.body.artists, req.body.track)
+        if (lyrics) {
+            res.json({ lyrics: lyrics })
+
+        }
+        else {
+            res.json({ lyrics: "No lyrics found" })
+        }
+    }
+    catch (err) {
+        console.log("ouch no lyrics ")
+        res.json({ lyrics: "No lyrics found for the song" })
+    }
+})
+
+async function getLyricsForLynxApp(artists, song) {
     try {
         let i = 0, lyrics = null
-          const songs = await Client.songs.get(+id);
-          if (songs) {
+        while (i < artists.length && lyrics === null) {
+            const songs = await Client.songs.search(`${song} ${artists[i].name}`);
+            if (songs[0]) {
+                lyrics = await songs[0].lyrics()
+                console.log(lyrics)
+            }
+            i++
+        }
+        if (!lyrics) {
+            i = 0
+            while (i < artists.length && lyrics === null) {
+                const songs = await Client.songs.search(`${artists[i].name} ${song}`)
+                if (songs[0]) {
+                    lyrics = await songs[0].lyrics()
+                    console.log(lyrics)
+                }
+                i++
+            }
+        }
+        return lyrics;
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+}
+
+
+async function getLyrics(id = -1) {
+    try {
+        let i = 0, lyrics = null
+        const songs = await Client.songs.get(+id);
+        if (songs) {
             lyrics = await songs.lyrics(true)
-          }
+        }
         return lyrics;
     }
     catch (error) {
         console.error(error);
         return null;
-      }
+    }
 }
 
 const getSongList = async (artist = "", song) => {
